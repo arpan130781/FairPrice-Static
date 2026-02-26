@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FairPrice</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --cream: #F7F3EE;
+    --sage-light: #C5D9C3;
+    --sage-dark: #527A50;
+    --earth: #5C4A3A;
+    --earth-light: #A48C78;
+    --warm-white: #FDFAF6;
+    --muted: #9E8E80;
+    --text: #2E2219;
+    --fair: #6DAB6A;
+    --avg: #D4A843;
+    --high: #C96B5A;
+  }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+  .app {
+    max-width: 430px;
+    margin: 0 auto;
+    background: var(--warm-white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ═══════════════════════════════════════
+     HEADER — fixed 190px on ALL pages
+  ═══════════════════════════════════════ */
+  .top-bar {
+    flex-shrink: 0;
+    height: 190px;
+    background: var(--earth);
+    padding: 0 24px 20px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0;
+  }
+  .top-bar::before {
+    content: '';
+    position: absolute; top: -70px; right: -70px;
+    width: 230px; height: 230px;
+    background: var(--sage-dark); border-radius: 50%; opacity: 0.22;
+    pointer-events: none;
+  }
+  .top-bar::after {
+    content: '';
+    position: absolute; bottom: -50px; left: -10px;
+    width: 150px; height: 150px;
+    background: var(--earth-light); border-radius: 50%; opacity: 0.18;
+    pointer-events: none;
+  }
+  .top-bar-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: var(--cream);
+    position: relative; z-index: 1;
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+  .top-bar-title .accent { color: var(--sage-light); }
+  .top-bar-sub {
+    font-size: 11px;
+    color: var(--earth-light);
+    position: relative; z-index: 1;
+    font-weight: 300;
+    letter-spacing: 0.3px;
+    margin-bottom: 14px;
+  }
+  /* Bottom row of header — location pill on Home, info pill on other pages */
+  .header-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 8px 12px;
+    position: relative; z-index: 1;
+    cursor: pointer;
+    width: 100%;
+  }
+  .pill-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%; flex-shrink: 0;
+  }
+  .pill-dot.pulse { background: var(--sage-light); animation: pulse 2s ease-in-out infinite; }
+  .pill-dot.market { background: var(--avg); }
+  .pill-dot.trend  { background: var(--fair); }
+  .pill-dot.review { background: #A8C8E8; }
+  @keyframes pulse {
+    0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)}
+  }
+  .pill-text  { font-size: 12px; color: var(--cream); font-weight: 300; flex: 1; }
+  .pill-right { font-size: 11px; color: var(--sage-light); font-weight: 500; }
+
+  /* ═══════════════════════════════════════
+     PAGES
+  ═══════════════════════════════════════ */
+  .page { display: none; flex: 1; flex-direction: column; }
+  .page.active { display: flex; }
+
+  .page-content { flex: 1; padding-bottom: 28px; }
+
+  /* ═══════════════════════════════════════
+     BOTTOM NAV
+  ═══════════════════════════════════════ */
+  .bottom-nav {
+    flex-shrink: 0;
+    display: flex; justify-content: space-around;
+    padding: 12px 0 22px;
+    border-top: 1px solid #EDE5DE;
+    background: var(--warm-white);
+    position: sticky; bottom: 0;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    cursor: pointer; padding: 5px 14px; border-radius: 12px; transition: background .15s;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--cream); }
+  .nav-icon  { font-size: 18px; }
+  .nav-label { font-size: 10px; color: var(--muted); }
+  .nav-item.active .nav-label { color: var(--earth); font-weight: 500; }
+
+  /* ═══════════════════════════════════════
+     SHARED
+  ═══════════════════════════════════════ */
+  .update-strip {
+    margin: 16px 24px 0;
+    background: #EBF4EA; border-radius: 10px;
+    padding: 8px 14px; font-size: 11px; color: var(--sage-dark);
+    display: flex; gap: 6px; align-items: center;
+  }
+  .section-label {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 24px 10px;
+  }
+  .section-title { font-family: 'DM Serif Display', serif; font-size: 17px; color: var(--text); }
+  .section-date  { font-size: 11px; color: var(--muted); }
+
+  /* ═══════════════════════════════════════
+     HOME — SEARCH & TABS
+  ═══════════════════════════════════════ */
+  .search-wrap { padding: 16px 24px 0; }
+  .search-box {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--cream); border-radius: 12px; padding: 11px 16px;
+    border: 1.5px solid transparent; transition: border-color .2s;
+  }
+  .search-box:focus-within { border-color: #8DAF8A; }
+  .search-icon { color: var(--muted); font-size: 15px; }
+  .search-box input {
+    border: none; background: transparent;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text);
+    width: 100%; outline: none;
+  }
+  .search-box input::placeholder { color: var(--muted); }
+
+  .tabs { display: flex; gap: 8px; padding: 12px 24px; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    cursor: pointer; white-space: nowrap; transition: all .2s;
+    border: 1.5px solid transparent; background: var(--cream); color: var(--muted);
+  }
+  .tab.active { background: var(--earth); color: var(--cream); border-color: var(--earth); }
+  .tab:hover:not(.active) { border-color: var(--earth-light); color: var(--earth); }
+
+  /* ═══════════════════════════════════════
+     HOME — PRICE CARDS
+  ═══════════════════════════════════════ */
+  .cards { padding: 0 24px; display: flex; flex-direction: column; gap: 10px; }
+  .card {
+    background: var(--cream); border-radius: 14px; padding: 14px 16px;
+    cursor: pointer; transition: transform .15s, box-shadow .15s;
+    position: relative; overflow: hidden;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.07); }
+  .card-accent {
+    position: absolute; top:0; right:0; width:70px; height:70px;
+    border-radius: 0 14px 0 70px; opacity:.12; pointer-events: none;
+  }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .card-name { font-family: 'DM Serif Display', serif; font-size: 19px; color: var(--text); line-height: 1; }
+  .card-unit { font-size: 10px; color: var(--muted); font-weight: 300; margin-top: 2px; }
+  .fair-badge { font-size: 10px; padding: 3px 9px; border-radius: 20px; font-weight: 500; flex-shrink: 0; }
+  .fair-badge.fair { background:#DFF0DE; color:var(--sage-dark); }
+  .fair-badge.avg  { background:#FBF0D6; color:#9B6E1C; }
+  .fair-badge.high { background:#F9DDD8; color:#8B3524; }
+  .price-bar { height:3px; background:#E8DDD4; border-radius:3px; margin-bottom:6px; overflow:hidden; }
+  .price-bar-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--fair),var(--avg),var(--high)); }
+  .price-row { display:flex; gap:16px; align-items:flex-end; }
+  .price-block { display:flex; flex-direction:column; gap:1px; }
+  .price-lbl { font-size:9px; color:var(--muted); letter-spacing:.4px; text-transform:uppercase; }
+  .price-val { font-size:17px; font-weight:500; line-height:1; }
+  .price-val.low{color:var(--fair)} .price-val.mid{color:var(--avg)} .price-val.hi{color:var(--high)}
+  .card-shops { margin-top:12px; padding-top:12px; border-top:1px solid #E4D9D0; display:none; }
+  .card-shops.open { display:block; animation: expand .2s ease; }
+  @keyframes expand{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  .shops-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+  .shop-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #EDE5DE; }
+  .shop-row:last-child{border-bottom:none}
+  .shop-name  { font-size:12px; color:var(--text); }
+  .shop-stars { font-size:10px; color:var(--avg); }
+  .shop-price { font-size:13px; font-weight:500; color:var(--earth); }
+
+  .submit-wrap { padding: 14px 24px 0; }
+  .submit-btn {
+    width:100%; padding:13px; background:var(--earth); color:var(--cream);
+    border:none; border-radius:12px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;
+    transition:background .2s, transform .1s;
+  }
+  .submit-btn:hover{background:var(--sage-dark)}
+  .submit-btn:active{transform:scale(.98)}
+  .submit-btn:disabled{opacity:.5;cursor:not-allowed}
+
+  /* ═══════════════════════════════════════
+     MODAL
+  ═══════════════════════════════════════ */
+  .modal-overlay {
+    display: none; position:fixed; inset:0;
+    background:rgba(46,34,25,.45); z-index:200; align-items:flex-end;
+  }
+  .modal-overlay.open { display:flex; animation:fadeIn .2s; }
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .modal {
+    background:var(--warm-white); border-radius:22px 22px 0 0;
+    padding:28px 24px 40px; width:100%; position:relative; animation:slideUp .25s ease;
+  }
+  @keyframes slideUp{from{transform:translateY(36px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .modal-title { font-family:'DM Serif Display',serif; font-size:21px; color:var(--text); margin-bottom:3px; }
+  .modal-sub   { font-size:11px; color:var(--muted); margin-bottom:20px; }
+  .form-field  { margin-bottom:14px; }
+  .form-label  { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:5px; display:block; }
+  .form-input  {
+    width:100%; padding:11px 13px; background:var(--cream);
+    border:1.5px solid transparent; border-radius:10px;
+    font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); outline:none; transition:border-color .2s;
+  }
+  .form-input:focus{border-color:#8DAF8A}
+  .anon-note { font-size:11px; color:var(--muted); text-align:center; margin-top:10px; }
+  .modal-close {
+    position:absolute; top:14px; right:18px;
+    background:var(--cream); border:none; border-radius:50%;
+    width:30px; height:30px; cursor:pointer; font-size:14px; color:var(--muted);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .modal-success { text-align:center; padding:28px 0; color:#527A50; display:none; }
+  .modal-success.show { display:block; }
+  .modal-form.hide { display:none; }
+
+  /* ═══════════════════════════════════════
+     MARKETS
+  ═══════════════════════════════════════ */
+  .market-card {
+    background:var(--cream); border-radius:14px; padding:14px 16px; margin:14px 24px 0;
+    transition:transform .15s,box-shadow .15s;
+  }
+  .market-card:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(0,0,0,.07)}
+  .market-card-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .market-name{font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)}
+  .market-dist{font-size:11px;color:var(--muted);margin-top:2px}
+  .market-badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:500;flex-shrink:0}
+  .market-badge.open  {background:#DFF0DE;color:var(--sage-dark)}
+  .market-badge.busy  {background:#FBF0D6;color:#9B6E1C}
+  .market-badge.closed{background:#F9DDD8;color:#8B3524}
+  .market-meta{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap}
+  .market-meta-item{display:flex;flex-direction:column;gap:1px}
+  .market-meta-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .market-meta-val  {font-size:12px;color:var(--text);font-weight:500}
+  .market-items{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+  .market-tag{font-size:10px;background:#EDE5DE;color:var(--earth);padding:2px 8px;border-radius:20px}
+
+  /* ═══════════════════════════════════════
+     TRENDS
+  ═══════════════════════════════════════ */
+  .stat-row{display:flex;gap:10px;margin:16px 24px 0}
+  .stat-box{flex:1;background:var(--cream);border-radius:12px;padding:12px;text-align:center}
+  .stat-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--earth)}
+  .stat-lbl{font-size:10px;color:var(--muted);margin-top:1px}
+  .trend-section{padding:14px 24px 0}
+  .trend-card{background:var(--cream);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+  .trend-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+  .trend-name{font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)}
+  .trend-unit{font-size:10px;color:var(--muted);margin-top:1px}
+  .trend-arrow{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+  .trend-arrow.up  {background:#F9DDD8;color:#8B3524}
+  .trend-arrow.down{background:#DFF0DE;color:var(--sage-dark)}
+  .trend-arrow.flat{background:#EDE5DE;color:var(--muted)}
+  .trend-bars{display:flex;align-items:flex-end;gap:5px;height:52px}
+  .trend-bar-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+  .trend-bar{width:100%;border-radius:3px 3px 0 0;background:var(--earth);opacity:.13}
+  .trend-bar.current{opacity:1!important;background:var(--sage-dark)!important}
+  .trend-bar-label{font-size:8px;color:var(--muted)}
+  .trend-insight{font-size:11px;color:var(--muted);margin-top:9px;padding-top:9px;border-top:1px solid #E4D9D0;line-height:1.55}
+
+  /* ═══════════════════════════════════════
+     REVIEWS
+  ═══════════════════════════════════════ */
+  .top-shops-label{font-family:'DM Serif Display',serif;font-size:15px;color:var(--text);padding:14px 24px 8px}
+  .top-shop-row{display:flex;align-items:center;gap:10px;padding:9px 24px;border-bottom:1px solid #EDE5DE}
+  .top-shop-rank{font-family:'DM Serif Display',serif;font-size:18px;color:var(--earth-light);width:26px;flex-shrink:0}
+  .top-shop-info{flex:1}
+  .top-shop-name  {font-size:13px;color:var(--text);font-weight:500}
+  .top-shop-market{font-size:10px;color:var(--muted)}
+  .top-shop-score {display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+  .top-shop-stars {font-size:11px;color:var(--avg)}
+  .top-shop-count {font-size:9px;color:var(--muted)}
+  .reviews-label{font-family:'DM Serif Display',serif;font-size:15px;color:var(--text);padding:14px 24px 4px}
+  .filter-row{display:flex;gap:7px;padding:6px 24px 10px;overflow-x:auto;scrollbar-width:none}
+  .filter-row::-webkit-scrollbar{display:none}
+  .filter-chip{padding:5px 13px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .2s;border:1.5px solid #EDE5DE;color:var(--muted);background:var(--cream)}
+  .filter-chip.active{background:var(--earth);color:var(--cream);border-color:var(--earth)}
+  .review-card{background:var(--cream);border-radius:14px;padding:14px 16px;margin:0 24px 10px}
+  .review-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:7px}
+  .review-shop  {font-family:'DM Serif Display',serif;font-size:16px;color:var(--text)}
+  .review-market{font-size:10px;color:var(--muted);margin-top:2px}
+  .review-stars {color:var(--avg);font-size:12px;flex-shrink:0}
+  .review-body  {font-size:12px;color:var(--text);line-height:1.55;margin-bottom:9px;font-weight:300;font-style:italic}
+  .review-footer{display:flex;justify-content:space-between;align-items:center}
+  .review-author{font-size:10px;color:var(--muted)}
+  .review-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500}
+  .review-tag.price  {background:#DFF0DE;color:var(--sage-dark)}
+  .review-tag.quality{background:#FBF0D6;color:#9B6E1C}
+  .review-tag.fresh  {background:#E8F0FB;color:#2D5A9B}
+  .review-card.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════════════ HOME PAGE ══════════════ -->
+  <div class="page active" id="page-Home">
+    <div class="top-bar">
+      <div class="top-bar-title">Fair<span class="accent">Price</span></div>
+      <div class="top-bar-sub">Real prices. Real markets. No bargaining stress.</div>
+      <div class="header-pill" onclick="showPage('Markets')">
+        <div class="pill-dot pulse"></div>
+        <span class="pill-text">Dadar Vegetable Market, Mumbai</span>
+        <span class="pill-right">Change</span>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="search-wrap">
+        <div class="search-box">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" placeholder="Search tomato, mango…" oninput="filterItems()" />
+        </div>
+      </div>
+      <div class="tabs">
+        <div class="tab active" id="tab-Vegetables" onclick="switchTab('Vegetables')">Vegetables</div>
+        <div class="tab" id="tab-Fruits" onclick="switchTab('Fruits')">Fruits</div>
+      </div>
+      <div class="update-strip">🌿 Prices updated today at 7:00 AM · 42 community submissions</div>
+      <div class="section-label">
+        <span class="section-title" id="section-title">Vegetables</span>
+        <span class="section-date">Thu, 26 Feb 2026</span>
+      </div>
+      <div class="cards" id="cards-container"></div>
+      <div class="submit-wrap">
+        <button class="submit-btn" onclick="openModal()">+ Submit a Price You Paid</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MARKETS PAGE ══════════════ -->
+  <div class="page" id="page-Markets">
+    <div class="top-bar">
+      <div class="top-bar-title">Nearby Markets</div>
+      <div class="top-bar-sub">Mumbai · 5 markets within 5 km</div>
+      <div class="header-pill">
+        <div class="pill-dot market"></div>
+        <span class="pill-text">Dadar, Mumbai · Updated today</span>
+        <span class="pill-right">5 open</span>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="update-strip">📍 Showing markets near your location</div>
+      <div class="market-card">
+        <div class="market-card-top"><div><div class="market-name">Dadar Vegetable Market</div><div class="market-dist">0.8 km away</div></div><div class="market-badge open">● Open</div></div>
+        <div class="market-meta"><div class="market-meta-item"><span class="market-meta-label">Timing</span><span class="market-meta-val">6 AM – 1 PM</span></div><div class="market-meta-item"><span class="market-meta-label">Vendors</span><span class="market-meta-val">120+</span></div><div class="market-meta-item"><span class="market-meta-label">Today</span><span class="market-meta-val">42 submissions</span></div></div>
+        <div class="market-items"><span class="market-tag">Vegetables</span><span class="market-tag">Fruits</span><span class="market-tag">Herbs</span></div>
+      </div>
+      <div class="market-card">
+        <div class="market-card-top"><div><div class="market-name">Matunga Sabzi Mandi</div><div class="market-dist">1.4 km away</div></div><div class="market-badge busy">● Busy</div></div>
+        <div class="market-meta"><div class="market-meta-item"><span class="market-meta-label">Timing</span><span class="market-meta-val">5 AM – 12 PM</span></div><div class="market-meta-item"><span class="market-meta-label">Vendors</span><span class="market-meta-val">85+</span></div><div class="market-meta-item"><span class="market-meta-label">Today</span><span class="market-meta-val">27 submissions</span></div></div>
+        <div class="market-items"><span class="market-tag">Vegetables</span><span class="market-tag">Leafy Greens</span></div>
+      </div>
+      <div class="market-card">
+        <div class="market-card-top"><div><div class="market-name">Dharavi Fruit Market</div><div class="market-dist">2.1 km away</div></div><div class="market-badge open">● Open</div></div>
+        <div class="market-meta"><div class="market-meta-item"><span class="market-meta-label">Timing</span><span class="market-meta-val">7 AM – 3 PM</span></div><div class="market-meta-item"><span class="market-meta-label">Vendors</span><span class="market-meta-val">60+</span></div><div class="market-meta-item"><span class="market-meta-label">Today</span><span class="market-meta-val">19 submissions</span></div></div>
+        <div class="market-items"><span class="market-tag">Fruits</span><span class="market-tag">Dry Fruits</span></div>
+      </div>
+      <div class="market-card">
+        <div class="market-card-top"><div><div class="market-name">Sion Koliwada Market</div><div class="market-dist">2.9 km away</div></div><div class="market-badge open">● Open</div></div>
+        <div class="market-meta"><div class="market-meta-item"><span class="market-meta-label">Timing</span><span class="market-meta-val">6 AM – 11 AM</span></div><div class="market-meta-item"><span class="market-meta-label">Vendors</span><span class="market-meta-val">40+</span></div><div class="market-meta-item"><span class="market-meta-label">Today</span><span class="market-meta-val">11 submissions</span></div></div>
+        <div class="market-items"><span class="market-tag">Vegetables</span><span class="market-tag">Fruits</span><span class="market-tag">Fish</span></div>
+      </div>
+      <div class="market-card">
+        <div class="market-card-top"><div><div class="market-name">Kurla Wholesale Bazaar</div><div class="market-dist">4.2 km away</div></div><div class="market-badge closed">Closed</div></div>
+        <div class="market-meta"><div class="market-meta-item"><span class="market-meta-label">Timing</span><span class="market-meta-val">Opens at 5 AM</span></div><div class="market-meta-item"><span class="market-meta-label">Vendors</span><span class="market-meta-val">200+</span></div><div class="market-meta-item"><span class="market-meta-label">Today</span><span class="market-meta-val">0 submissions</span></div></div>
+        <div class="market-items"><span class="market-tag">Wholesale Veg</span><span class="market-tag">Wholesale Fruits</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ TRENDS PAGE ══════════════ -->
+  <div class="page" id="page-Trends">
+    <div class="top-bar">
+      <div class="top-bar-title">Price Trends</div>
+      <div class="top-bar-sub">Last 7 days · Dadar Market</div>
+      <div class="header-pill">
+        <div class="pill-dot trend"></div>
+        <span class="pill-text">142 community submissions this week</span>
+        <span class="pill-right">Live</span>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="stat-row">
+        <div class="stat-box"><div class="stat-val">7</div><div class="stat-lbl">Tracked</div></div>
+        <div class="stat-box"><div class="stat-val">142</div><div class="stat-lbl">Submissions</div></div>
+        <div class="stat-box"><div class="stat-val">3</div><div class="stat-lbl">Markets</div></div>
+      </div>
+      <div class="trend-section" id="trends-container"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ REVIEWS PAGE ══════════════ -->
+  <div class="page" id="page-Reviews">
+    <div class="top-bar">
+      <div class="top-bar-title">Shop Reviews</div>
+      <div class="top-bar-sub">Community verified · Anonymous</div>
+      <div class="header-pill">
+        <div class="pill-dot review"></div>
+        <span class="pill-text">116 reviews across 5 markets</span>
+        <span class="pill-right">This week</span>
+      </div>
+    </div>
+    <div class="page-content">
+      <div class="top-shops-label">🏆 Top Rated Shops</div>
+      <div class="top-shop-row"><div class="top-shop-rank">01</div><div class="top-shop-info"><div class="top-shop-name">Raju Bhaiya Stall</div><div class="top-shop-market">Dadar Market</div></div><div class="top-shop-score"><div class="top-shop-stars">★★★★★</div><div class="top-shop-count">38 reviews</div></div></div>
+      <div class="top-shop-row"><div class="top-shop-rank">02</div><div class="top-shop-info"><div class="top-shop-name">Kashmir Fruits</div><div class="top-shop-market">Dadar Market</div></div><div class="top-shop-score"><div class="top-shop-stars">★★★★★</div><div class="top-shop-count">24 reviews</div></div></div>
+      <div class="top-shop-row"><div class="top-shop-rank">03</div><div class="top-shop-info"><div class="top-shop-name">Hari Sabzi</div><div class="top-shop-market">Matunga Mandi</div></div><div class="top-shop-score"><div class="top-shop-stars">★★★★★</div><div class="top-shop-count">21 reviews</div></div></div>
+      <div class="top-shop-row"><div class="top-shop-rank">04</div><div class="top-shop-info"><div class="top-shop-name">Fruit Palace</div><div class="top-shop-market">Dharavi Fruit Market</div></div><div class="top-shop-score"><div class="top-shop-stars">★★★★★</div><div class="top-shop-count">18 reviews</div></div></div>
+      <div class="top-shop-row"><div class="top-shop-rank">05</div><div class="top-shop-info"><div class="top-shop-name">Daily Fresh</div><div class="top-shop-market">Dadar Market</div></div><div class="top-shop-score"><div class="top-shop-stars">★★★★☆</div><div class="top-shop-count">15 reviews</div></div></div>
+      <div class="reviews-label">Recent Reviews</div>
+      <div class="filter-row">
+        <div class="filter-chip active" onclick="filterReviews('All',this)">All</div>
+        <div class="filter-chip" onclick="filterReviews('Fair Pricing',this)">Fair Pricing</div>
+        <div class="filter-chip" onclick="filterReviews('Great Quality',this)">Great Quality</div>
+        <div class="filter-chip" onclick="filterReviews('Super Fresh',this)">Super Fresh</div>
+      </div>
+      <div id="reviews-container"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ BOTTOM NAV ══════════════ -->
+  <div class="bottom-nav">
+    <div class="nav-item active" id="nav-Home" onclick="showPage('Home')"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></div>
+    <div class="nav-item" id="nav-Markets" onclick="showPage('Markets')"><span class="nav-icon">📍</span><span class="nav-label">Markets</span></div>
+    <div class="nav-item" id="nav-Trends" onclick="showPage('Trends')"><span class="nav-icon">📊</span><span class="nav-label">Trends</span></div>
+    <div class="nav-item" id="nav-Reviews" onclick="showPage('Reviews')"><span class="nav-icon">⭐</span><span class="nav-label">Reviews</span></div>
+  </div>
+</div>
+
+<!-- ══════════════ MODAL ══════════════ -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title">Share a Price</div>
+    <div class="modal-sub">Helps the community. 100% anonymous.</div>
+    <div class="modal-success" id="modal-success">
+      <div style="font-size:38px">🌿</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:19px;margin-top:10px">Thank you!</div>
+      <div style="font-size:11px;color:#9E8E80;margin-top:5px">Your submission helps the community.</div>
+    </div>
+    <div class="modal-form" id="modal-form">
+      <div class="form-field"><label class="form-label">Item</label><input class="form-input" id="f-item" placeholder="e.g. Tomato" /></div>
+      <div class="form-field"><label class="form-label">Shop / Stall</label><input class="form-input" id="f-shop" placeholder="e.g. Raju Bhaiya's Stall" /></div>
+      <div class="form-field"><label class="form-label">Price Paid (₹)</label><input class="form-input" id="f-price" type="number" placeholder="e.g. 28" /></div>
+      <button class="submit-btn" onclick="submitPrice()" id="submit-price-btn" style="margin-top:6px">Submit Anonymously</button>
+      <div class="anon-note">🔒 No account needed. No data stored.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const DATA = {
+  Vegetables: [
+    { name:"Tomato",  unit:"per kg",    low:20, avg:32,  high:48,  badge:"fair", shops:[{name:"Raju Bhaiya Stall",stars:"★★★★☆",price:"₹22"},{name:"Green Fresh Corner",stars:"★★★★★",price:"₹28"},{name:"Market Gate Shop",stars:"★★★☆☆",price:"₹40"}] },
+    { name:"Potato",  unit:"per kg",    low:18, avg:25,  high:38,  badge:"fair", shops:[{name:"Subhash Vegetable",stars:"★★★★☆",price:"₹20"},{name:"Daily Fresh",stars:"★★★★★",price:"₹24"},{name:"Corner Cart",stars:"★★★☆☆",price:"₹35"}] },
+    { name:"Onion",   unit:"per kg",    low:22, avg:38,  high:55,  badge:"avg",  shops:[{name:"Ram's Stall",stars:"★★★★☆",price:"₹24"},{name:"Market Fresh",stars:"★★★☆☆",price:"₹40"},{name:"Wholesale Corner",stars:"★★☆☆☆",price:"₹52"}] },
+    { name:"Spinach", unit:"per bunch", low:10, avg:15,  high:25,  badge:"fair", shops:[{name:"Hari Sabzi",stars:"★★★★★",price:"₹10"},{name:"Green Lane",stars:"★★★★☆",price:"₹15"}] },
+  ],
+  Fruits: [
+    { name:"Banana",  unit:"per dozen", low:30, avg:45,  high:65,  badge:"fair", shops:[{name:"Fruit Palace",stars:"★★★★★",price:"₹32"},{name:"Daily Bazaar",stars:"★★★★☆",price:"₹44"},{name:"Main Market",stars:"★★★☆☆",price:"₹60"}] },
+    { name:"Apple",   unit:"per kg",    low:80, avg:120, high:180, badge:"high", shops:[{name:"Kashmir Fruits",stars:"★★★★★",price:"₹85"},{name:"Fresh Point",stars:"★★★★☆",price:"₹125"},{name:"Premium Stall",stars:"★★★☆☆",price:"₹170"}] },
+    { name:"Papaya",  unit:"per kg",    low:25, avg:35,  high:50,  badge:"avg",  shops:[{name:"Tropical Corner",stars:"★★★★☆",price:"₹28"},{name:"Bazar Lane",stars:"★★★☆☆",price:"₹40"}] },
+  ]
+};
+
+const TRENDS = [
+  { name:"Tomato",  unit:"₹/kg",    dir:"up",   change:"+₹8 this week",  insight:"Prices rose due to reduced supply from Nashik. Buy in smaller quantities for now.", bars:[24,28,22,30,32,38,40] },
+  { name:"Onion",   unit:"₹/kg",    dir:"down", change:"−₹5 this week",  insight:"New stock arrived from Lasalgaon mandi. Good time to stock up.",                    bars:[50,48,45,44,42,40,38] },
+  { name:"Banana",  unit:"₹/dozen", dir:"flat", change:"Stable",         insight:"Prices consistent for 10 days straight. Good time to buy in bulk.",                 bars:[44,45,43,45,44,46,45] },
+  { name:"Apple",   unit:"₹/kg",    dir:"up",   change:"+₹15 this week", insight:"Off-season premium. Best avoided until the October harvest.",                       bars:[100,105,110,115,112,120,120] },
+];
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+const REVIEWS = [
+  { shop:"Raju Bhaiya Stall", market:"Dadar Market",         stars:"★★★★★", body:"Always gives fair price without bargaining. Tomatoes are fresh and he gives a little extra on each kg.",  tag:"price",   label:"Fair Pricing"  },
+  { shop:"Kashmir Fruits",    market:"Dadar Market",         stars:"★★★★★", body:"Apples here are genuinely from Kashmir. Slightly pricey but the quality shows every time.",               tag:"quality", label:"Great Quality" },
+  { shop:"Hari Sabzi",        market:"Matunga Mandi",        stars:"★★★★★", body:"Spinach and methi are freshly cut every morning. Get there before 8 AM or the good stuff is gone.",       tag:"fresh",   label:"Super Fresh"   },
+  { shop:"Daily Fresh",       market:"Dadar Market",         stars:"★★★★☆", body:"Potatoes are consistently good. Prices are fair and the vendor is polite. No pressure at all.",            tag:"price",   label:"Fair Pricing"  },
+  { shop:"Market Fresh",      market:"Sion Market",          stars:"★★★☆☆", body:"Onion prices run higher than others nearby. Check other stalls before buying here.",                       tag:"quality", label:"Average"       },
+  { shop:"Fruit Palace",      market:"Dharavi Fruit Market", stars:"★★★★★", body:"Best bananas in the area. They ripen perfectly at home and the dozen count is always honest.",             tag:"fresh",   label:"Super Fresh"   },
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentTab = "Vegetables";
+let expandedCard = null;
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── Home: render cards ────────────────────────────────────────────────────────
+function renderCards(tab, searchTerm) {
+  const container = document.getElementById('cards-container');
+  const items = DATA[tab].filter(i => i.name.toLowerCase().includes((searchTerm||'').toLowerCase()));
+  const badgeMap = { fair:"✓ Fair", avg:"~ Average", high:"↑ High" };
+  const accentColor = { fair:"#6DAB6A", avg:"#D4A843", high:"#C96B5A" };
+
+  container.innerHTML = items.map((item, i) => `
+    <div class="card" onclick="toggleCard(${i})" id="card-${i}">
+      <div class="card-accent" style="background:${accentColor[item.badge]}"></div>
+      <div class="card-top">
+        <div>
+          <div class="card-name">${item.name}</div>
+          <div class="card-unit">${item.unit}</div>
+        </div>
+        <div class="fair-badge ${item.badge}">${badgeMap[item.badge]}</div>
+      </div>
+      <div class="price-bar"><div class="price-bar-fill" style="width:100%"></div></div>
+      <div class="price-row">
+        <div class="price-block"><span class="price-lbl">Low</span><span class="price-val low">₹${item.low}</span></div>
+        <div class="price-block"><span class="price-lbl">Avg</span><span class="price-val mid">₹${item.avg}</span></div>
+        <div class="price-block"><span class="price-lbl">High</span><span class="price-val hi">₹${item.high}</span></div>
+      </div>
+      <div class="card-shops" id="shops-${i}">
+        <div class="shops-lbl">Nearby Shops</div>
+        ${item.shops.map(s=>`
+          <div class="shop-row">
+            <div><div class="shop-name">${s.name}</div><div class="shop-stars">${s.stars}</div></div>
+            <div class="shop-price">${s.price}</div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  document.getElementById('section-title').textContent = tab;
+}
+
+function toggleCard(i) {
+  const shops = document.getElementById('shops-' + i);
+  if (expandedCard === i) {
+    shops.classList.remove('open');
+    expandedCard = null;
+  } else {
+    if (expandedCard !== null) {
+      const prev = document.getElementById('shops-' + expandedCard);
+      if (prev) prev.classList.remove('open');
+    }
+    shops.classList.add('open');
+    expandedCard = i;
+  }
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  expandedCard = null;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  renderCards(tab, document.getElementById('search-input').value);
+}
+
+function filterItems() {
+  renderCards(currentTab, document.getElementById('search-input').value);
+}
+
+// ── Trends: render bars ───────────────────────────────────────────────────────
+function renderTrends() {
+  const container = document.getElementById('trends-container');
+  const arrowLbl = { up:"↑ Rising", down:"↓ Falling", flat:"→ Stable" };
+  container.innerHTML = TRENDS.map(t => {
+    const mx = Math.max(...t.bars);
+    const bars = t.bars.map((v,i) => `
+      <div class="trend-bar-wrap">
+        <div class="trend-bar${i===t.bars.length-1?' current':''}" style="height:${(v/mx)*48}px"></div>
+        <span class="trend-bar-label">${DAYS[i]}</span>
+      </div>`).join('');
+    return `
+      <div class="trend-card">
+        <div class="trend-card-top">
+          <div><div class="trend-name">${t.name}</div><div class="trend-unit">${t.unit}</div></div>
+          <div class="trend-arrow ${t.dir}">${arrowLbl[t.dir]} · ${t.change}</div>
+        </div>
+        <div class="trend-bars">${bars}</div>
+        <div class="trend-insight">${t.insight}</div>
+      </div>`;
+  }).join('');
+}
+
+// ── Reviews: render & filter ──────────────────────────────────────────────────
+function renderReviews(filterLabel) {
+  const container = document.getElementById('reviews-container');
+  const filtered = filterLabel === 'All' ? REVIEWS : REVIEWS.filter(r => r.label === filterLabel);
+  container.innerHTML = filtered.map(r => `
+    <div class="review-card">
+      <div class="review-top">
+        <div><div class="review-shop">${r.shop}</div><div class="review-market">${r.market}</div></div>
+        <div class="review-stars">${r.stars}</div>
+      </div>
+      <div class="review-body">"${r.body}"</div>
+      <div class="review-footer">
+        <span class="review-author">🔒 Anonymous</span>
+        <span class="review-tag ${r.tag}">${r.label}</span>
+      </div>
+    </div>`).join('');
+}
+
+function filterReviews(label, el) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderReviews(label);
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('modal-success').style.display = 'none';
+  document.getElementById('modal-form').style.display = 'block';
+  document.getElementById('f-item').value = '';
+  document.getElementById('f-shop').value = '';
+  document.getElementById('f-price').value = '';
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+function submitPrice() {
+  const item = document.getElementById('f-item').value;
+  const price = document.getElementById('f-price').value;
+  if (!item || !price) return;
+  document.getElementById('modal-form').style.display = 'none';
+  document.getElementById('modal-success').style.display = 'block';
+  setTimeout(closeModal, 1600);
+}
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+renderCards('Vegetables', '');
+renderTrends();
+renderReviews('All');
+</script>
+</body>
+</html>
